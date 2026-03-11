@@ -1,21 +1,44 @@
-import { useState } from 'react'
-import { mockTasks } from '../data/mockTasks'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
-// Later: replace mockTasks with a Supabase fetch
 export function useTasks() {
-  const [tasks, setTasks] = useState(mockTasks)
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  function addTask(task) {
-    setTasks(prev => [...prev, { ...task, id: crypto.randomUUID() }])
+  useEffect(() => {
+    supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (!error) setTasks(data)
+        setLoading(false)
+      })
+  }, [])
+
+  async function addTask(task) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([{ ...task, dependency_id: task.dependency_id || null }])
+      .select()
+      .single()
+    if (!error) setTasks(prev => [...prev, data])
   }
 
-  function updateTask(updated) {
-    setTasks(prev => prev.map(t => (t.id === updated.id ? updated : t)))
+  async function updateTask(updated) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({ ...updated, updated_at: new Date().toISOString() })
+      .eq('id', updated.id)
+      .select()
+      .single()
+    if (!error) setTasks(prev => prev.map(t => (t.id === updated.id ? data : t)))
   }
 
-  function deleteTask(id) {
-    setTasks(prev => prev.filter(t => t.id !== id))
+  async function deleteTask(id) {
+    const { error } = await supabase.from('tasks').delete().eq('id', id)
+    if (!error) setTasks(prev => prev.filter(t => t.id !== id))
   }
 
-  return { tasks, addTask, updateTask, deleteTask }
+  return { tasks, loading, addTask, updateTask, deleteTask }
 }

@@ -1,4 +1,4 @@
-export const COLUMNS = ['Backlog', 'To Do', 'In Progress', 'Blocked', 'Done']
+export const COLUMNS = ['Backlog', 'In Progress', 'Done']
 
 export const mockTasks = [
   {
