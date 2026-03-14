@@ -1000,6 +1000,75 @@ body {
   text-align: right;
 }
 
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.state-card {
+  background: rgba(15,23,42,0.6);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.state-card-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  background: rgba(30,41,59,0.5);
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.state-card-count {
+  background: rgba(148,163,184,0.15);
+  border-radius: 10px;
+  padding: 0 0.4rem;
+  font-size: 0.65rem;
+  color: rgba(148,163,184,0.5);
+}
+
+.state-facility-list {
+  padding: 0.5rem 0;
+}
+
+.state-facility-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.72rem;
+  color: rgba(148,163,184,0.75);
+}
+
+.state-facility-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.state-facility-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.state-facility-occ {
+  font-size: 0.68rem;
+  color: rgba(148,163,184,0.4);
+  flex-shrink: 0;
+}
+
 /* =============================================================================
    DATA HUB PAGE
 ============================================================================= */
