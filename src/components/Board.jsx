@@ -48,7 +48,6 @@ export default function Board() {
     <div>
       <header className="app-header">
         <div className="header-brand">
-          <button className="portal-back-btn" onClick={() => navigate('/')}>← Portal</button>
           <h1>ACE <span>Capital</span></h1>
           <span className="header-tagline">Operations Command Center</span>
         </div>
@@ -68,6 +67,7 @@ export default function Board() {
             </div>
           </div>
           <button className="new-task-btn" onClick={() => openAdd('Backlog')}>+ New Task</button>
+          <button className="back-btn" onClick={() => navigate('/')}>← Portal Home</button>
         </div>
       </header>
       <div className="board-wrapper">

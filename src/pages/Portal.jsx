@@ -14,7 +14,7 @@ const TOOLS = [
     description: 'Predictive revenue risk scores and KPI trends across all 50 portfolio facilities.',
     icon: '◈',
     route: '/analytics',
-    status: 'coming',
+    status: 'live',
     tag: 'Business Intelligence',
   },
   {
@@ -22,7 +22,7 @@ const TOOLS = [
     description: 'Full roster of ACE Capital portfolio facilities with location and capacity data.',
     icon: '⊞',
     route: '/facilities',
-    status: 'coming',
+    status: 'live',
     tag: 'Portfolio Data',
   },
   {
@@ -30,8 +30,24 @@ const TOOLS = [
     description: 'Download performance summaries, model outputs, and board-ready executive reports.',
     icon: '≡',
     route: '/reports',
-    status: 'coming',
+    status: 'live',
     tag: 'Reporting',
+  },
+  {
+    title: 'Data Hub',
+    description: 'Schema reference and weekly data upload for portfolio facility metrics.',
+    icon: '⬡',
+    route: '/data-hub',
+    status: 'live',
+    tag: 'Data Management',
+  },
+  {
+    title: 'Business Documents',
+    description: 'Model performance reports, financial summaries, and capstone presentation materials.',
+    icon: '⊟',
+    route: '/documents',
+    status: 'live',
+    tag: 'Reports & Research',
   },
 ]
 
@@ -93,9 +109,9 @@ export default function Portal() {
             >
               <div className="portal-card-top">
                 <span className="portal-card-icon">{tool.icon}</span>
-                <span className={`portal-card-badge ${tool.status === 'live' ? 'badge-live' : 'badge-soon'}`}>
-                  {tool.status === 'live' ? 'Live' : 'Coming Soon'}
-                </span>
+                {tool.status === 'coming' && (
+                  <span className="portal-card-badge badge-soon">Coming Soon</span>
+                )}
               </div>
               <div className="portal-card-tag">{tool.tag}</div>
               <h3 className="portal-card-title">{tool.title}</h3>
