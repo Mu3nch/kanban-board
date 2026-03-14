@@ -318,7 +318,7 @@ export default function ReportsExports() {
               ? <Bar  yAxisId="left" dataKey="y" name={yMeta.label} fill={GOLD} radius={[3,3,0,0]} />
               : <Line yAxisId="left" type="monotone" dataKey="y" name={yMeta.label} stroke={GOLD} strokeWidth={2} dot={false} />
             }
-            <Line yAxisId="right" type="monotone" dataKey="y2" name={y2Meta.label} stroke="#e879f9" strokeWidth={3} dot={false} />
+            <Line yAxisId="right" type="monotone" dataKey="y2" name={y2Meta.label} stroke="rgba(255,255,255,0.85)" strokeWidth={2.5} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       )
