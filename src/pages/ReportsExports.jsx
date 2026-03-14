@@ -86,19 +86,26 @@ export default function ReportsExports() {
   useEffect(() => {
     async function load() {
       try {
+        // Facility lookup first (50 rows, instant)
+        const { data: facilities, error: facErr } = await supabase
+          .from('portfolio_facilities')
+          .select('facility_id,facility_name,state,facility_type')
+        if (facErr) throw facErr
+        const facMap = Object.fromEntries(facilities.map(f => [f.facility_id, f]))
+
         const { data: raw, error: err } = await supabase
           .from('monthly_facility_metrics')
-          .select('facility_id,metric_date,metric_year,metric_month,occupancy_rate,ebitda,ebitda_margin,ebitda_budget_monthly,underperformance_flag,claims_denied_rate,net_revenue,total_admissions,avg_length_of_stay,treatment_completion_rate,readmission_rate,staff_turnover_rate,ar_days,portfolio_facilities(facility_name,state,facility_type)')
+          .select('facility_id,metric_date,metric_year,metric_month,occupancy_rate,ebitda,ebitda_margin,ebitda_budget_monthly,underperformance_flag,claims_denied_rate,net_revenue,total_admissions,avg_length_of_stay,treatment_completion_rate,readmission_rate,staff_turnover_rate,ar_days')
           .order('metric_date', { ascending: false })
           .limit(1200)
         if (err) throw err
 
-        // Flatten nested join + compute pct columns (mirrors what vw_kpi_simple did)
+        // Client-side join + compute pct columns
         const data = raw.reverse().map(r => ({
           ...r,
-          facility_name:        r.portfolio_facilities?.facility_name,
-          state:                r.portfolio_facilities?.state,
-          facility_type:        r.portfolio_facilities?.facility_type,
+          facility_name:        facMap[r.facility_id]?.facility_name,
+          state:                facMap[r.facility_id]?.state,
+          facility_type:        facMap[r.facility_id]?.facility_type,
           occupancy_pct:        (r.occupancy_rate || 0) * 100,
           ebitda_margin_pct:    (r.ebitda_margin   || 0) * 100,
           denial_rate_pct:      (r.claims_denied_rate || 0) * 100,
