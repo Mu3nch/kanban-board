@@ -1,14 +1,10 @@
-import { useState } from 'react'
-
 // ── Projection ────────────────────────────────────────────────────────────────
-const W = 560, H = 400
+const W = 560, H = 380
 const LNG_W = -95, LNG_E = -74
 const LAT_S = 24,  LAT_N = 41
 const px = lng => (lng - LNG_W) / (LNG_E - LNG_W) * W
 const py = lat => (1 - (lat - LAT_S) / (LAT_N - LAT_S)) * H
 
-// ── Simplified SE state bounding boxes ───────────────────────────────────────
-// [west, south, east, north, abbr, labelLng, labelLat]
 const STATES = [
   [-87.6, 24.5, -80.0, 31.1, 'FL', -83.3, 27.5],
   [-85.6, 30.4, -80.9, 35.0, 'GA', -83.3, 32.5],
@@ -24,7 +20,6 @@ const STATES = [
   [-82.6, 37.2, -77.7, 40.6, 'WV', -80.4, 38.9],
 ]
 
-// ── City coordinates ──────────────────────────────────────────────────────────
 const CITY_COORDS = {
   'Miami,FL': [-80.19, 25.76], 'Orlando,FL': [-81.38, 28.54], 'Tampa,FL': [-82.46, 27.95],
   'Jacksonville,FL': [-81.66, 30.33], 'Fort Lauderdale,FL': [-80.14, 26.12],
@@ -53,14 +48,12 @@ const CITY_COORDS = {
   'Morgantown,WV': [-79.95, 39.63], 'Parkersburg,WV': [-81.56, 39.27], 'Wheeling,WV': [-80.72, 40.07],
 }
 
-const TYPE_COLORS = {
+export const TYPE_COLORS = {
   'Residential': '#f59e0b', 'IOP': '#38bdf8', 'PHP': '#a78bfa',
   'Detox': '#f87171', 'Dual Diagnosis': '#34d399', 'Sober Living': '#fb923c',
 }
 
-export default function FacilityMap({ facilities }) {
-  const [tooltip, setTooltip] = useState(null)
-
+export default function FacilityMap({ facilities, selectedId, onSelect }) {
   const markers = facilities
     .map(f => {
       const coords = CITY_COORDS[`${f.city},${f.state}`]
@@ -69,92 +62,63 @@ export default function FacilityMap({ facilities }) {
     .filter(Boolean)
 
   return (
-    <div className="map-wrap">
-      <div className="map-header">
-        <span className="map-title">Portfolio Map</span>
-        <div className="map-legend">
-          {Object.entries(TYPE_COLORS).map(([type, color]) => (
-            <span key={type} className="map-legend-item">
-              <span className="map-legend-dot" style={{ background: color }} />
-              {type}
-            </span>
-          ))}
-        </div>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: '100%', height: '100%' }}
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {STATES.map(([w, s, e, n, abbr, llng, llat]) => (
+          <g key={abbr}>
+            <rect
+              x={px(w)} y={py(n)}
+              width={px(e) - px(w)} height={py(s) - py(n)}
+              fill="rgba(30,41,59,0.75)"
+              stroke="rgba(148,163,184,0.18)"
+              strokeWidth={0.5}
+            />
+            <text
+              x={px(llng)} y={py(llat)}
+              textAnchor="middle" dominantBaseline="middle"
+              fill="rgba(148,163,184,0.22)"
+              fontSize={9} fontWeight="700" letterSpacing={1}
+            >{abbr}</text>
+          </g>
+        ))}
+
+        {markers.map(f => {
+          const cx = px(f.coords[0])
+          const cy = py(f.coords[1])
+          const color = TYPE_COLORS[f.facility_type] || '#94a3b8'
+          const isSelected = f.facility_id === selectedId
+          return (
+            <circle
+              key={f.facility_id}
+              cx={cx} cy={cy}
+              r={isSelected ? 6 : 3.5}
+              fill={color}
+              fillOpacity={isSelected ? 1 : 0.75}
+              stroke={isSelected ? '#fff' : 'rgba(0,0,0,0.4)'}
+              strokeWidth={isSelected ? 1.5 : 0.5}
+              style={{ cursor: 'pointer', transition: 'r 0.15s, stroke 0.15s' }}
+              onClick={() => onSelect && onSelect(f.facility_id)}
+            />
+          )
+        })}
+      </svg>
+
+      {/* Legend */}
+      <div style={{
+        position: 'absolute', bottom: '0.5rem', left: '0.5rem',
+        display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+      }}>
+        {Object.entries(TYPE_COLORS).map(([type, color]) => (
+          <span key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.62rem', color: 'rgba(148,163,184,0.5)' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+            {type}
+          </span>
+        ))}
       </div>
-
-      <div className="map-container" style={{ position: 'relative', height: 420 }}>
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: '100%', height: '100%' }}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* State backgrounds */}
-          {STATES.map(([w, s, e, n, abbr, llng, llat]) => (
-            <g key={abbr}>
-              <rect
-                x={px(w)} y={py(n)}
-                width={px(e) - px(w)} height={py(s) - py(n)}
-                fill="rgba(30,41,59,0.75)"
-                stroke="rgba(148,163,184,0.2)"
-                strokeWidth={0.5}
-              />
-              <text
-                x={px(llng)} y={py(llat)}
-                textAnchor="middle" dominantBaseline="middle"
-                fill="rgba(148,163,184,0.25)"
-                fontSize={9} fontWeight="700" letterSpacing={1}
-              >
-                {abbr}
-              </text>
-            </g>
-          ))}
-
-          {/* Facility dots */}
-          {markers.map(f => {
-            const cx = px(f.coords[0])
-            const cy = py(f.coords[1])
-            const color = TYPE_COLORS[f.facility_type] || '#94a3b8'
-            return (
-              <circle
-                key={f.facility_id}
-                cx={cx} cy={cy} r={3.5}
-                fill={color}
-                fillOpacity={0.9}
-                stroke="rgba(0,0,0,0.5)"
-                strokeWidth={0.5}
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={() => setTooltip({ ...f, cx, cy })}
-                onMouseLeave={() => setTooltip(null)}
-              />
-            )
-          })}
-        </svg>
-
-        {/* Tooltip overlay */}
-        {tooltip && (
-          <div
-            className="map-tooltip"
-            style={{
-              position: 'absolute',
-              top: '1rem', right: '1rem',
-              pointerEvents: 'none',
-            }}
-          >
-            <div className="map-tooltip-name">{tooltip.facility_name}</div>
-            <div className="map-tooltip-row">{tooltip.city}, {tooltip.state}</div>
-            <div className="map-tooltip-row" style={{ color: TYPE_COLORS[tooltip.facility_type] }}>
-              {tooltip.facility_type}
-            </div>
-            {tooltip.latest_occupancy_rate != null && (
-              <div className="map-tooltip-row">
-                Occupancy: {(tooltip.latest_occupancy_rate * 100).toFixed(1)}%
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="map-summary">{markers.length} of {facilities.length} facilities mapped</div>
     </div>
   )
 }
