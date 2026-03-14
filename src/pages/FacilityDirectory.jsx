@@ -105,58 +105,63 @@ export default function FacilityDirectory() {
         {error   && <div className="dir-state dir-error">Error: {error}</div>}
 
         {!loading && !error && (
-          <div className="dir-table-wrap">
-            <table className="dir-table">
-              <thead>
-                <tr>
-                  <th>Facility</th>
-                  <th>Location</th>
-                  <th>Type</th>
-                  <th>Beds</th>
-                  <th>Occupancy</th>
-                  <th>Deal</th>
-                  <th>Status</th>
-                  <th>Initiatives</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(f => (
-                  <tr key={f.facility_id}>
-                    <td>
-                      <div className="dir-name">{f.facility_name}</div>
-                      {f.ceo_name && <div className="dir-sub">CEO: {f.ceo_name}</div>}
-                    </td>
-                    <td>
-                      <div>{f.city}, {f.state}</div>
-                      {f.accreditation && f.accreditation !== 'None' && (
-                        <div className="dir-sub">{f.accreditation}</div>
+          filtered.length === 0
+            ? <div className="dir-state">No facilities match your filters.</div>
+            : <div className="fac-grid">
+                {filtered.map(f => {
+                  const occ = f.latest_occupancy_rate != null ? f.latest_occupancy_rate * 100 : null
+                  const occColor = occ == null ? '#94a3b8' : occ >= 80 ? '#34d399' : occ >= 60 ? '#f59e0b' : '#f87171'
+                  return (
+                    <div key={f.facility_id} className={`fac-card fac-type-${(f.facility_type || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                      <div className="fac-card-top">
+                        <div className="fac-card-name">{f.facility_name}</div>
+                        <span className={`portal-card-badge ${STATUS_COLORS[f.facility_status] || 'badge-soon'}`}>
+                          {f.facility_status}
+                        </span>
+                      </div>
+
+                      <div className="fac-card-meta">
+                        <span className="fac-type-pill">{f.facility_type}</span>
+                        <span className="fac-location">{f.city}, {f.state}</span>
+                      </div>
+
+                      {occ != null && (
+                        <div className="fac-occ-wrap">
+                          <div className="fac-occ-label">
+                            <span>Occupancy</span>
+                            <span style={{ color: occColor, fontWeight: 600 }}>{occ.toFixed(1)}%</span>
+                          </div>
+                          <div className="fac-occ-track">
+                            <div className="fac-occ-fill" style={{ width: `${occ}%`, background: occColor }} />
+                          </div>
+                        </div>
                       )}
-                    </td>
-                    <td>{f.facility_type}</td>
-                    <td className="dir-center">{f.bed_capacity}</td>
-                    <td className="dir-center">
-                      {f.latest_occupancy_rate != null
-                        ? `${(f.latest_occupancy_rate * 100).toFixed(1)}%`
-                        : '—'}
-                    </td>
-                    <td>
-                      <div>{f.deal_type}</div>
-                      <div className="dir-sub">{f.deal_status}</div>
-                    </td>
-                    <td>
-                      <span className={`portal-card-badge ${STATUS_COLORS[f.facility_status] || 'badge-soon'}`}>
-                        {f.facility_status}
-                      </span>
-                    </td>
-                    <td className="dir-center">{f.active_initiatives ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="dir-state">No facilities match your filters.</div>
-            )}
-          </div>
+
+                      <div className="fac-stats">
+                        <div className="fac-stat">
+                          <div className="fac-stat-val">{f.bed_capacity ?? '—'}</div>
+                          <div className="fac-stat-label">Beds</div>
+                        </div>
+                        <div className="fac-stat">
+                          <div className="fac-stat-val">{f.deal_type || '—'}</div>
+                          <div className="fac-stat-label">Deal Type</div>
+                        </div>
+                        <div className="fac-stat">
+                          <div className="fac-stat-val">{f.active_initiatives ?? '0'}</div>
+                          <div className="fac-stat-label">Initiatives</div>
+                        </div>
+                      </div>
+
+                      {(f.ceo_name || (f.accreditation && f.accreditation !== 'None')) && (
+                        <div className="fac-card-footer">
+                          {f.ceo_name && <span>CEO: {f.ceo_name}</span>}
+                          {f.accreditation && f.accreditation !== 'None' && <span>{f.accreditation}</span>}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
         )}
 
         <div className="portal-footer-note">

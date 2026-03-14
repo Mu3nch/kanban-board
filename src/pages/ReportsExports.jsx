@@ -278,7 +278,7 @@ export default function ReportsExports() {
           <ResponsiveContainer width="100%" height={420}>
             <LineChart data={rows} margin={margin}>
               {grid}{xAxis}{yAxis}{tooltip}
-              <Legend wrapperStyle={{ fontSize: '0.72rem', color: SLATE }} />
+              <Legend verticalAlign="top" wrapperStyle={{ fontSize: '0.72rem', color: SLATE, paddingBottom: '0.5rem' }} />
               {groups.map((g, i) => (
                 <Line key={g} type="monotone" dataKey={g} stroke={PALETTE[i % PALETTE.length]} strokeWidth={2} dot={false} />
               ))}
@@ -290,7 +290,7 @@ export default function ReportsExports() {
         <ResponsiveContainer width="100%" height={420}>
           <BarChart data={rows} margin={margin}>
             {grid}{xAxis}{yAxis}{tooltip}
-            <Legend wrapperStyle={{ fontSize: '0.72rem', color: SLATE }} />
+            <Legend verticalAlign="top" wrapperStyle={{ fontSize: '0.72rem', color: SLATE, paddingBottom: '0.5rem' }} />
             {groups.map((g, i) => (
               <Bar key={g} dataKey={g} fill={PALETTE[i % PALETTE.length]} radius={[3,3,0,0]} />
             ))}
@@ -313,12 +313,12 @@ export default function ReportsExports() {
               labelStyle={{ color: GOLD, fontWeight: 600 }}
               itemStyle={{ color: SLATE }}
             />
-            <Legend wrapperStyle={{ fontSize: '0.72rem', color: SLATE }} />
+            <Legend verticalAlign="top" wrapperStyle={{ fontSize: '0.72rem', color: SLATE, paddingBottom: '0.5rem' }} />
             {chartType === 'Bar'
               ? <Bar  yAxisId="left" dataKey="y" name={yMeta.label} fill={GOLD} radius={[3,3,0,0]} />
               : <Line yAxisId="left" type="monotone" dataKey="y" name={yMeta.label} stroke={GOLD} strokeWidth={2} dot={false} />
             }
-            <Line yAxisId="right" type="monotone" dataKey="y2" name={y2Meta.label} stroke="#60a5fa" strokeWidth={2} dot={false} strokeDasharray="5 3" />
+            <Line yAxisId="right" type="monotone" dataKey="y2" name={y2Meta.label} stroke="#e879f9" strokeWidth={3} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       )

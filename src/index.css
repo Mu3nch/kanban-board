@@ -1002,6 +1002,144 @@ body {
 
 
 /* =============================================================================
+   FACILITY CARDS
+============================================================================= */
+
+.fac-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.fac-card {
+  background: rgba(15,23,42,0.7);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-left: 3px solid rgba(148,163,184,0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.fac-card:hover {
+  background: rgba(20,32,58,0.9);
+  border-left-color: #b8932a;
+}
+
+/* Type accent colors */
+.fac-type-residential   { border-left-color: rgba(245,158,11,0.5);  }
+.fac-type-iop           { border-left-color: rgba(56,189,248,0.5);  }
+.fac-type-php           { border-left-color: rgba(167,139,250,0.5); }
+.fac-type-detox         { border-left-color: rgba(248,113,113,0.5); }
+.fac-type-dual-diagnosis{ border-left-color: rgba(52,211,153,0.5);  }
+.fac-type-sober-living  { border-left-color: rgba(251,146,60,0.5);  }
+
+.fac-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.fac-card-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.fac-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fac-type-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  background: rgba(148,163,184,0.1);
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+}
+
+.fac-location {
+  font-size: 0.72rem;
+  color: rgba(148,163,184,0.5);
+}
+
+.fac-occ-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fac-occ-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: rgba(148,163,184,0.5);
+}
+
+.fac-occ-track {
+  height: 4px;
+  background: rgba(148,163,184,0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.fac-occ-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.fac-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid rgba(148,163,184,0.07);
+  padding-top: 0.65rem;
+}
+
+.fac-stat {
+  flex: 1;
+  text-align: center;
+}
+.fac-stat + .fac-stat {
+  border-left: 1px solid rgba(148,163,184,0.07);
+}
+
+.fac-stat-val {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.fac-stat-label {
+  font-size: 0.62rem;
+  color: rgba(148,163,184,0.35);
+  letter-spacing: 0.3px;
+  margin-top: 0.1rem;
+}
+
+.fac-card-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: rgba(148,163,184,0.35);
+  border-top: 1px solid rgba(148,163,184,0.06);
+  padding-top: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* =============================================================================
    DATA HUB PAGE
 ============================================================================= */
 
