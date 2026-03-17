@@ -469,6 +469,230 @@ function generateMLPerformance() {
   return new Promise(resolve => out.on('finish', resolve))
 }
 
+// ─── 4. Data Dictionary ────────────────────────────────────────────────────────
+
+function generateDataDictionary() {
+  const doc = makeDoc('ACE Capital — Database Data Dictionary')
+  const out = fs.createWriteStream(path.join(OUT_DIR, 'data-dictionary.pdf'))
+  doc.pipe(out)
+
+  header(doc, 'Database Data Dictionary', 'ACE Capital Behavioral Health Portfolio · All Tables & Variables')
+
+  // Intro
+  bodyText(doc, 'This document describes every table and column in the ACE Capital portfolio database. The schema consists of 6 tables covering facility identity, operational profiles, M&A deal data, monthly financial and clinical metrics, management personnel, and value creation initiatives. The database contains approximately 2,400 monthly metric observations across 50 facilities over 48 months.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'ML target variables are highlighted in green. Foreign keys are noted where applicable.')
+
+  // ── Helper to render a column row ──────────────────────────────────────────
+  function colRow(doc, name, type, description, isTarget = false) {
+    ensureSpace(doc, 36)
+    const y = doc.y
+    // Name
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(isTarget ? GREEN : GOLD2)
+      .text(name, 60, y, { width: 155 })
+    // Type
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED2)
+      .text(type, 220, y, { width: 90 })
+    // Description (may wrap)
+    doc.font('Helvetica').fontSize(9).fillColor(isTarget ? GREEN : MUTED)
+      .text(description, 315, y, { width: 250, lineGap: 1 })
+    // Move below the tallest of the three columns
+    const descH = doc.heightOfString(description, { width: 250, lineGap: 1 })
+    doc.y = y + Math.max(14, descH) + 4
+  }
+
+  // ── Helper for column group label ─────────────────────────────────────────
+  function groupLabel(doc, text) {
+    ensureSpace(doc, 40)
+    doc.moveDown(0.3)
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(MUTED2)
+      .text(text.toUpperCase(), 60, doc.y, { characterSpacing: 0.5 })
+    doc.moveDown(0.2)
+  }
+
+  // ── Column header row ─────────────────────────────────────────────────────
+  function colHeader(doc) {
+    doc.moveDown(0.4)
+    const y = doc.y
+    doc.rect(55, y - 2, doc.page.width - 110, 16).fill('#0d1e38')
+    doc.font('Helvetica-Bold').fontSize(8).fillColor(GOLD2)
+      .text('COLUMN', 60, y, { width: 155 })
+      .text('TYPE', 220, y, { width: 90 })
+      .text('DESCRIPTION', 315, y, { width: 250 })
+    doc.y = y + 18
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 1: portfolio_facilities
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '1. portfolio_facilities', 180)
+  bodyText(doc, 'Master list of all 50 rehabilitation centers in the ACE Capital portfolio. Every other table references this table via facility_id. One row per facility.')
+  colHeader(doc)
+  colRow(doc, 'facility_id', 'SERIAL / PK', 'Auto-incrementing primary key. Unique integer identifier for each facility across all tables.')
+  colRow(doc, 'facility_name', 'VARCHAR(150)', 'Full legal name of the facility.')
+  colRow(doc, 'city', 'VARCHAR(100)', 'City where the facility is located.')
+  colRow(doc, 'state', 'CHAR(2)', 'Two-letter state code. All facilities are in southeastern US states.')
+  colRow(doc, 'region', 'VARCHAR(50)', 'Geographic region. Defaults to "Southeast".')
+  colRow(doc, 'facility_type', 'VARCHAR(50)', 'Treatment modality: Residential, IOP (Intensive Outpatient), PHP (Partial Hospitalization), Detox, Dual Diagnosis, or Sober Living.')
+  colRow(doc, 'bed_capacity', 'INTEGER', 'Total licensed bed count. Must be > 0. Used as denominator for occupancy_rate calculations.')
+  colRow(doc, 'license_number', 'VARCHAR(50)', 'State regulatory license number. Nullable.')
+  colRow(doc, 'status', 'VARCHAR(20)', 'Current portfolio status: Active, Inactive, or Sold. Defaults to Active.')
+  colRow(doc, 'acquisition_date', 'DATE', 'Date ACE Capital completed acquisition of the facility.')
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp. Defaults to current time.')
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 2: facility_profiles
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '2. facility_profiles', 180)
+  bodyText(doc, '1:1 child of portfolio_facilities. Stores operational details, contact information, accreditation status, and annual EBITDA budget targets. One row per facility.')
+  colHeader(doc)
+  colRow(doc, 'profile_id', 'SERIAL / PK', 'Auto-incrementing primary key.')
+  colRow(doc, 'facility_id', 'INTEGER / FK', 'Foreign key to portfolio_facilities. Unique constraint enforces the 1:1 relationship.')
+  colRow(doc, 'address', 'VARCHAR(200)', 'Street address of the facility.')
+  colRow(doc, 'zip_code', 'CHAR(5)', '5-digit US postal code.')
+  colRow(doc, 'phone', 'VARCHAR(25)', 'Primary facility phone number.')
+  colRow(doc, 'email', 'VARCHAR(120)', 'Primary facility contact email.')
+  colRow(doc, 'medical_director', 'VARCHAR(120)', 'Name and credentials of the facility\'s medical director (e.g., "Dr. Jane Smith, MD").')
+  colRow(doc, 'facility_size_sqft', 'INTEGER', 'Total physical footprint of the facility in square feet.')
+  colRow(doc, 'accreditation', 'VARCHAR(100)', 'Accrediting body or bodies. Common values: CARF, Joint Commission, BHQR.')
+  colRow(doc, 'services_offered', 'TEXT', 'Comma-separated list of clinical programs and services offered at the facility.')
+  colRow(doc, 'year_established', 'INTEGER', 'Year the facility was originally founded (pre-acquisition).')
+  colRow(doc, 'ebitda_budget_annual', 'NUMERIC(14,2)', 'Annual EBITDA target in dollars. Divided by 12 to compute monthly budget used in underperformance_flag logic.', true)
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp.')
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 3: deals
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '3. deals', 180)
+  bodyText(doc, '1:1 child of portfolio_facilities. Captures M&A transaction data for each facility acquisition. Contains high_return_flag, the ML classification target for deal performance. One row per facility.')
+  colHeader(doc)
+  colRow(doc, 'deal_id', 'SERIAL / PK', 'Auto-incrementing primary key.')
+  colRow(doc, 'facility_id', 'INTEGER / FK', 'Foreign key to portfolio_facilities. Unique constraint enforces 1:1 relationship.')
+  colRow(doc, 'deal_name', 'VARCHAR(200)', 'Internal deal name or codename used during the acquisition process.')
+  colRow(doc, 'deal_type', 'VARCHAR(50)', 'Acquisition type: Platform (first facility in a market), Add-On (bolt-on to existing platform), or Recap (recapitalization).')
+  colRow(doc, 'acquisition_date', 'DATE', 'Date the transaction closed.')
+  colRow(doc, 'entry_enterprise_value', 'NUMERIC(16,2)', 'Total enterprise value paid at acquisition in dollars.')
+  colRow(doc, 'entry_ebitda', 'NUMERIC(14,2)', 'Last-twelve-months (LTM) EBITDA at time of acquisition. Used to compute entry multiple.')
+  colRow(doc, 'entry_multiple', 'NUMERIC(6,2)', 'Purchase price multiple: Entry Enterprise Value divided by Entry EBITDA.')
+  colRow(doc, 'equity_invested', 'NUMERIC(14,2)', 'Dollar amount of equity contributed by ACE Capital.')
+  colRow(doc, 'debt_financing', 'NUMERIC(14,2)', 'Dollar amount of debt used to fund the acquisition.')
+  colRow(doc, 'projected_moic', 'NUMERIC(6,2)', 'Underwriting Multiple on Invested Capital (MOIC) target at time of acquisition.')
+  colRow(doc, 'actual_moic', 'NUMERIC(6,2)', 'Realized MOIC at exit. NULL if the facility is still in the active portfolio.')
+  colRow(doc, 'exit_date', 'DATE', 'Date the facility was sold or exited. NULL if still active.')
+  colRow(doc, 'exit_enterprise_value', 'NUMERIC(16,2)', 'Enterprise value realized at exit. NULL if still active.')
+  colRow(doc, 'deal_status', 'VARCHAR(20)', 'Current deal state: Active (still in portfolio) or Exited.')
+  colRow(doc, 'high_return_flag', 'SMALLINT', 'ML TARGET: Set to 1 when actual_moic >= 2.5, indicating a high-return deal. Used as classification target for deal performance prediction.', true)
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp.')
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 4: monthly_facility_metrics
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '4. monthly_facility_metrics', 180)
+  bodyText(doc, '1:many child of portfolio_facilities. Core operational, clinical, staffing, and financial data. 48 months × 50 facilities = 2,400 rows. underperformance_flag is the primary ML classification target used in the production XGBoost model.')
+  colHeader(doc)
+
+  groupLabel(doc, 'Identifiers & Period')
+  colRow(doc, 'metric_id', 'SERIAL / PK', 'Auto-incrementing primary key.')
+  colRow(doc, 'facility_id', 'INTEGER / FK', 'Foreign key to portfolio_facilities.')
+  colRow(doc, 'metric_year', 'INTEGER', 'Calendar year of the reporting period (e.g., 2021).')
+  colRow(doc, 'metric_month', 'INTEGER', 'Month number 1–12 of the reporting period.')
+  colRow(doc, 'metric_date', 'DATE', 'First calendar day of the reporting month. Used for time-series ordering and date-range queries.')
+
+  groupLabel(doc, 'Census & Occupancy')
+  colRow(doc, 'bed_capacity', 'INTEGER', 'Licensed bed count for that specific month. May differ from facility-level capacity if beds are temporarily offline.')
+  colRow(doc, 'avg_daily_census', 'NUMERIC(7,1)', 'Average number of patients in treatment per day during the month.')
+  colRow(doc, 'occupancy_rate', 'NUMERIC(6,4)', 'Computed as avg_daily_census / bed_capacity. Key driver of revenue and the top ML feature by SHAP value.')
+
+  groupLabel(doc, 'Admissions & Discharges')
+  colRow(doc, 'total_admissions', 'INTEGER', 'Number of new patients entering treatment during the month.')
+  colRow(doc, 'total_discharges', 'INTEGER', 'Number of patients completing or leaving treatment during the month.')
+  colRow(doc, 'avg_length_of_stay', 'NUMERIC(6,1)', 'Average number of days per episode of care across all discharges in the month.')
+
+  groupLabel(doc, 'Clinical Outcomes')
+  colRow(doc, 'treatment_completion_rate', 'NUMERIC(6,4)', 'Proportion of discharged patients who completed their planned treatment program. Higher rates correlate with better clinical outcomes and payer contract compliance.')
+  colRow(doc, 'readmission_rate', 'NUMERIC(6,4)', 'Proportion of patients readmitted within 30 days of discharge. High rates may indicate insufficient aftercare or case complexity.')
+
+  groupLabel(doc, 'Referral Pipeline')
+  colRow(doc, 'total_referrals', 'INTEGER', 'Total inbound referrals received during the month from all sources (physicians, insurance, self-referral).')
+  colRow(doc, 'converted_referrals', 'INTEGER', 'Number of referrals that converted to an admission.')
+  colRow(doc, 'referral_conversion_rate', 'NUMERIC(6,4)', 'Computed as converted_referrals / total_referrals. Strong predictor of upcoming occupancy trends.')
+
+  groupLabel(doc, 'Payer Mix')
+  colRow(doc, 'payer_commercial', 'NUMERIC(6,4)', 'Proportion of patients covered by commercial (private) insurance. Higher commercial mix typically yields higher net revenue per patient day.')
+  colRow(doc, 'payer_medicaid', 'NUMERIC(6,4)', 'Proportion of patients covered by Medicaid.')
+  colRow(doc, 'payer_medicare', 'NUMERIC(6,4)', 'Proportion of patients covered by Medicare.')
+  colRow(doc, 'payer_self_pay', 'NUMERIC(6,4)', 'Proportion of patients paying out-of-pocket or uninsured.')
+
+  groupLabel(doc, 'Staffing')
+  colRow(doc, 'total_staff_count', 'INTEGER', 'Total headcount across all departments at month end.')
+  colRow(doc, 'clinical_staff_count', 'INTEGER', 'Headcount of clinicians, therapists, counselors, and nurses.')
+  colRow(doc, 'staff_turnover_rate', 'NUMERIC(6,4)', 'Annualized monthly staff turnover rate. High turnover reduces treatment completion rates and is a key causal ML feature.')
+
+  groupLabel(doc, 'Revenue Cycle & Financials')
+  colRow(doc, 'gross_revenue', 'NUMERIC(14,2)', 'Total billed charges before insurance adjustments, denials, or write-offs.')
+  colRow(doc, 'net_revenue', 'NUMERIC(14,2)', 'Revenue actually collected after denials and contractual adjustments. Used as the revenue basis for EBITDA.')
+  colRow(doc, 'total_expenses', 'NUMERIC(14,2)', 'Total operating expenses for the month including labor, facilities, and administrative costs.')
+  colRow(doc, 'ebitda', 'NUMERIC(14,2)', 'Earnings Before Interest, Taxes, Depreciation & Amortization. Computed as net_revenue minus total_expenses.')
+  colRow(doc, 'ebitda_margin', 'NUMERIC(6,4)', 'EBITDA as a proportion of net_revenue. Primary profitability KPI tracked at the portfolio level.')
+  colRow(doc, 'ebitda_budget_monthly', 'NUMERIC(14,2)', 'Monthly EBITDA target derived from facility_profiles.ebitda_budget_annual / 12. Denominator for underperformance_flag.', true)
+
+  groupLabel(doc, 'Claims & Collections')
+  colRow(doc, 'claims_submitted', 'INTEGER', 'Total insurance claims filed during the month.')
+  colRow(doc, 'claims_denied', 'INTEGER', 'Number of claims rejected by payers. High denial volumes indicate revenue cycle or documentation problems.')
+  colRow(doc, 'claims_denied_rate', 'NUMERIC(6,4)', 'Computed as claims_denied / claims_submitted. Elevated rates are a leading indicator of financial stress.')
+  colRow(doc, 'collections_rate', 'NUMERIC(6,4)', 'Net revenue collected as a proportion of gross billed. Reflects overall revenue cycle efficiency.')
+  colRow(doc, 'ar_days', 'NUMERIC(6,1)', 'Average days outstanding in accounts receivable. Lower is better; high AR days indicate cash flow pressure.')
+
+  groupLabel(doc, 'ML Target Variable')
+  colRow(doc, 'underperformance_flag', 'SMALLINT', 'PRIMARY ML TARGET: Set to 1 when ebitda < 90% of ebitda_budget_monthly for that period. Positive class rate is approximately 28% across the dataset. This is the variable the production XGBoost model is trained to predict.', true)
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp.')
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 5: management_team
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '5. management_team', 180)
+  bodyText(doc, '1:many child of portfolio_facilities. Key executives and clinical leaders at each facility. Typically 3–6 records per facility.')
+  colHeader(doc)
+  colRow(doc, 'member_id', 'SERIAL / PK', 'Auto-incrementing primary key.')
+  colRow(doc, 'facility_id', 'INTEGER / FK', 'Foreign key to portfolio_facilities.')
+  colRow(doc, 'full_name', 'VARCHAR(120)', 'Full name of the team member.')
+  colRow(doc, 'title', 'VARCHAR(120)', 'Job title (e.g., CEO, CFO, Medical Director, Clinical Director).')
+  colRow(doc, 'department', 'VARCHAR(60)', 'Functional department: Clinical, Finance, Operations, or Medical.')
+  colRow(doc, 'hire_date', 'DATE', 'Date this person joined the facility.')
+  colRow(doc, 'tenure_years', 'NUMERIC(5,1)', 'Years of service at this facility. Derived from hire_date but stored for query convenience.')
+  colRow(doc, 'education', 'VARCHAR(150)', 'Highest academic degree(s) and field of study.')
+  colRow(doc, 'prior_company', 'VARCHAR(150)', 'Most recent employer before joining this facility.')
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp.')
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TABLE 6: value_creation_initiatives
+  // ═══════════════════════════════════════════════════════════════════════════
+  sectionTitle(doc, '6. value_creation_initiatives', 180)
+  bodyText(doc, '1:many child of portfolio_facilities. Strategic improvement projects tracked at the facility level and surfaced on the Operations Board. Typically 3–7 initiatives per facility.')
+  colHeader(doc)
+  colRow(doc, 'initiative_id', 'SERIAL / PK', 'Auto-incrementing primary key.')
+  colRow(doc, 'facility_id', 'INTEGER / FK', 'Foreign key to portfolio_facilities.')
+  colRow(doc, 'initiative_name', 'VARCHAR(200)', 'Short descriptive name of the improvement project.')
+  colRow(doc, 'category', 'VARCHAR(60)', 'Workstream classification: Revenue, Operational, Clinical, Staffing, or Technology.')
+  colRow(doc, 'status', 'VARCHAR(30)', 'Current state: Planning, In Progress, Completed, or On Hold. Defaults to Planning.')
+  colRow(doc, 'priority', 'VARCHAR(10)', 'Urgency level: High, Medium, or Low.')
+  colRow(doc, 'owner', 'VARCHAR(120)', 'Name of the ACE Capital or facility team member responsible for execution.')
+  colRow(doc, 'start_date', 'DATE', 'Date the initiative was formally launched.')
+  colRow(doc, 'target_completion_date', 'DATE', 'Planned completion date set at initiative launch.')
+  colRow(doc, 'actual_completion_date', 'DATE', 'Date the initiative was completed. NULL if still in progress.')
+  colRow(doc, 'estimated_value_impact', 'NUMERIC(14,2)', 'Projected dollar value creation (EBITDA or revenue improvement) from completing this initiative.')
+  colRow(doc, 'actual_value_impact', 'NUMERIC(14,2)', 'Realized dollar impact post-completion. NULL if the initiative is not yet complete.')
+  colRow(doc, 'description', 'TEXT', 'Detailed description of the initiative scope, approach, and success criteria.')
+  colRow(doc, 'notes', 'TEXT', 'Free-form operational notes, blockers, or updates added over time.')
+  colRow(doc, 'created_at', 'TIMESTAMPTZ', 'Record creation timestamp.')
+  colRow(doc, 'updated_at', 'TIMESTAMPTZ', 'Timestamp of the most recent record update.')
+
+  footer(doc, 'ACE Capital · Database Data Dictionary · Confidential · Internal Use Only')
+  doc.end()
+
+  return new Promise(resolve => out.on('finish', resolve))
+}
+
 // ─── Run ───────────────────────────────────────────────────────────────────────
 
 ;(async () => {
@@ -479,5 +703,7 @@ function generateMLPerformance() {
   console.log('  ✓ ml-model-comparison.pdf')
   await generateMLPerformance()
   console.log('  ✓ ml-model-performance.pdf')
+  await generateDataDictionary()
+  console.log('  ✓ data-dictionary.pdf')
   console.log('Done.')
 })()

@@ -31,6 +31,14 @@ const DOCUMENTS = [
     filename: 'company-bio.pdf',
     size: '0.3 MB',
   },
+  {
+    id: 4,
+    title: 'Database Data Dictionary',
+    description: 'Complete variable reference for all 6 database tables — column names, data types, and plain-English descriptions. ML target variables highlighted.',
+    category: 'Research',
+    filename: 'data-dictionary.pdf',
+    size: '0.2 MB',
+  },
 ]
 
 const CATEGORY_COLORS = {
