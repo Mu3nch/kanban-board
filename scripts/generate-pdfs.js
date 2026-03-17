@@ -693,6 +693,493 @@ function generateDataDictionary() {
   return new Promise(resolve => out.on('finish', resolve))
 }
 
+// ─── 5. Methodology & Technical Approach ──────────────────────────────────────
+
+function generateMethodology() {
+  const doc = makeDoc('ACE Capital — Analytics Methodology')
+  const out = fs.createWriteStream(path.join(OUT_DIR, 'methodology.pdf'))
+  doc.pipe(out)
+
+  header(doc, 'Analytics Methodology', 'Portfolio Intelligence Initiative · Technical Approach & Pipeline')
+
+  bodyText(doc, 'This document describes the end-to-end technical methodology behind the ACE Capital Portfolio Intelligence Initiative, from problem framing through data engineering, model development, and operational deployment.')
+
+  // ── 1. Problem Framing ──────────────────────────────────────────────────────
+  sectionTitle(doc, '1. Problem Framing')
+  bodyText(doc, 'The core business problem: ACE Capital operates 50 drug and alcohol rehabilitation facilities across the southeastern US with no unified mechanism to identify which facilities are trending toward financial underperformance before the monthly P&L confirms it. By the time a problem appears in the financials, intervention lag is typically 6–8 weeks.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'The analytical objective was to build a binary classification model that predicts, one month in advance, whether a facility will miss its EBITDA budget by more than 10%. This translates to a monthly risk score for each of the 50 facilities that the operations team can act on proactively.')
+  doc.moveDown(0.4)
+
+  const framing = [
+    ['Task type',        'Supervised binary classification'],
+    ['Target variable',  'underperformance_flag: 1 if EBITDA < 90% of monthly budget'],
+    ['Prediction horizon','One month ahead (t+1 prediction using features at time t)'],
+    ['Unit of analysis', 'Facility-month (one observation per facility per month)'],
+    ['Dataset size',     '2,400 observations: 50 facilities × 48 months'],
+    ['Positive class rate','~28% (underperformance events)'],
+  ]
+  const fCols = [60, 220]
+  framing.forEach(([k, v]) => {
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD2).text(k, fCols[0], y, { width: 155 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(v, fCols[1], y, { width: 350, lineGap: 1 })
+    doc.moveDown(0.55)
+  })
+
+  // ── 2. Data Sources & Collection ────────────────────────────────────────────
+  sectionTitle(doc, '2. Data Sources & Collection')
+  bodyText(doc, 'All data was sourced from facility-level operational systems and consolidated into a unified PostgreSQL database (hosted on Supabase). Source systems varied by facility; data integration was a significant component of the project scope.')
+  doc.moveDown(0.4)
+
+  const sources = [
+    ['Billing / EHR Systems',   'Monthly revenue, claims, denials, collections, and payer mix data extracted from each facility\'s billing and electronic health record platforms.'],
+    ['Census Reporting',        'Daily patient census reports aggregated to monthly averages for occupancy, admissions, discharges, and length-of-stay calculations.'],
+    ['HR / Payroll Systems',    'Staff headcount and turnover data by department, used to compute monthly staff_turnover_rate.'],
+    ['ACE Capital Finance Team','Monthly EBITDA budget targets (ebitda_budget_annual from facility_profiles), used as the denominator for the underperformance_flag.'],
+    ['Referral Tracking',       'Inbound referral volumes and conversion rates logged in facility CRM systems.'],
+  ]
+  sources.forEach(([src, desc]) => {
+    ensureSpace(doc, 45)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(WHITE).text(src, 60, y, { width: 160 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(desc, 225, y, { width: 335, lineGap: 1 })
+    doc.moveDown(0.65)
+  })
+
+  // ── 3. Feature Engineering ──────────────────────────────────────────────────
+  sectionTitle(doc, '3. Feature Engineering')
+  bodyText(doc, 'Raw database columns were used directly as features in most cases, with several derived features added to capture trends and ratios not directly observable in point-in-time values.')
+  doc.moveDown(0.4)
+
+  const features = [
+    ['occupancy_rate', 'Derived: avg_daily_census / bed_capacity. Top feature by SHAP value. Captures utilization efficiency.'],
+    ['ebitda_margin', 'Derived: ebitda / net_revenue. Profitability signal independent of facility size.'],
+    ['claims_denied_rate', 'Derived: claims_denied / claims_submitted. Leading indicator of revenue cycle stress.'],
+    ['referral_conversion_rate', 'Derived: converted_referrals / total_referrals. Forward-looking occupancy signal.'],
+    ['staff_turnover_rate', 'Direct from source. Annualized. High turnover precedes clinical outcome deterioration.'],
+    ['payer_commercial', 'Direct from source. Commercial mix is a strong net revenue per patient day predictor.'],
+    ['ar_days', 'Direct from source. Rising AR days signal cash flow pressure before it hits EBITDA.'],
+    ['Lag features (t-1, t-2)', 'One- and two-month lags of occupancy_rate and ebitda_margin added to capture momentum effects.'],
+  ]
+  features.forEach(([name, desc]) => {
+    ensureSpace(doc, 38)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD2).text(name, 60, y, { width: 155 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(desc, 220, y, { width: 340, lineGap: 1 })
+    doc.moveDown(0.6)
+  })
+
+  // ── 4. Class Imbalance ──────────────────────────────────────────────────────
+  sectionTitle(doc, '4. Handling Class Imbalance')
+  bodyText(doc, 'The dataset exhibits a 72/28 class split (healthy vs. underperforming months). Imbalance was addressed via two mechanisms:')
+  doc.moveDown(0.3)
+
+  const imbalance = [
+    ['scale_pos_weight (XGBoost)', 'Set to 2.57 (ratio of negative to positive class). Directly penalizes misclassification of the minority class during gradient computation without altering the training dataset.'],
+    ['F1 Score optimization', 'Model selection prioritized F1 over accuracy. Accuracy is a misleading metric on imbalanced datasets; a model predicting "healthy" for every observation would achieve 72% accuracy while being useless operationally.'],
+  ]
+  imbalance.forEach(([name, desc]) => {
+    ensureSpace(doc, 45)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GREEN).text(name, 60, y, { width: 160 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(desc, 225, y, { width: 335, lineGap: 1 })
+    doc.moveDown(0.7)
+  })
+  bodyText(doc, 'SMOTE (Synthetic Minority Oversampling Technique) was evaluated but not used in production. Synthetic oversampling improved recall marginally (+1.2%) but degraded precision (-3.8%), resulting in a lower net F1. The scale_pos_weight approach was cleaner, more interpretable, and performed better.')
+
+  // ── Page 2 ──────────────────────────────────────────────────────────────────
+  doc.addPage()
+
+  // ── 5. Train/Test Split & Validation ────────────────────────────────────────
+  sectionTitle(doc, '5. Train/Test Split & Cross-Validation')
+  bodyText(doc, 'Standard random train/test split (80/20) was used as the primary holdout evaluation. Model selection and hyperparameter tuning used 5-fold stratified cross-validation on the training set, with stratification preserving the 28% positive class rate in each fold.')
+  doc.moveDown(0.4)
+
+  const splits = [
+    ['Training set',        '1,920 observations (80%)'],
+    ['Test set',            '480 observations (20%)'],
+    ['CV strategy',         '5-fold stratified cross-validation'],
+    ['CV metric',           'F1 score (primary), AUC-ROC (secondary)'],
+    ['Leakage prevention',  'ebitda_budget_monthly excluded from features (it is the denominator of the target). All lag features computed within training folds only.'],
+  ]
+  splits.forEach(([k, v]) => {
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD2).text(k, 60, y, { width: 160 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(v, 225, y, { width: 335, lineGap: 1 })
+    doc.moveDown(0.6)
+  })
+
+  // ── 6. Model Selection ──────────────────────────────────────────────────────
+  sectionTitle(doc, '6. Model Selection')
+  bodyText(doc, 'Five algorithms were evaluated under identical conditions. XGBoost was selected as the production model. Full comparison metrics are documented in the ML Model Selection & Comparison report.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'Selection criteria in priority order: (1) AUC-ROC — measures overall discriminative ability; (2) F1 Score — balances the cost of false positives and false negatives; (3) Feature importance stability across CV folds — a model with unstable importances may not generalize.')
+
+  // ── 7. Hyperparameter Tuning ────────────────────────────────────────────────
+  sectionTitle(doc, '7. Hyperparameter Tuning')
+  bodyText(doc, 'Grid search with cross-validation was used to tune the following XGBoost parameters:')
+  doc.moveDown(0.3)
+
+  const params = [
+    ['n_estimators',     '100, 200, 300',           '300',   'More trees improve performance up to diminishing returns.'],
+    ['max_depth',        '3, 4, 5, 6',              '6',     'Deeper trees capture more interactions; 6 avoided overfitting.'],
+    ['learning_rate',    '0.01, 0.05, 0.1',         '0.05',  'Slower learning with more trees outperformed fast learning.'],
+    ['subsample',        '0.6, 0.8, 1.0',           '0.8',   'Row subsampling reduced variance without hurting recall.'],
+    ['colsample_bytree', '0.6, 0.8, 1.0',           '0.8',   'Feature subsampling improved generalization.'],
+  ]
+
+  const pCols = [60, 165, 265, 315]
+  const pH = 16
+  let py = doc.y + 4
+  doc.rect(55, py - 3, doc.page.width - 110, pH).fill('#0d1e38')
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(GOLD2)
+    .text('PARAMETER', pCols[0], py, { width: 100 })
+    .text('VALUES TESTED', pCols[1], py, { width: 95 })
+    .text('SELECTED', pCols[2], py, { width: 45 })
+    .text('RATIONALE', pCols[3], py, { width: 250 })
+  py += pH
+
+  params.forEach((row, i) => {
+    ensureSpace(doc, 30)
+    py = doc.y
+    doc.rect(55, py - 2, doc.page.width - 110, 18).fill(i % 2 === 0 ? '#0f1e35' : '#0b1830')
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(WHITE).text(row[0], pCols[0], py, { width: 100 })
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(row[1], pCols[1], py, { width: 95 })
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(GREEN).text(row[2], pCols[2], py, { width: 45 })
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(row[3], pCols[3], py, { width: 250 })
+    doc.y = py + 20
+  })
+
+  // ── 8. Deployment ───────────────────────────────────────────────────────────
+  sectionTitle(doc, '8. Deployment & Scoring')
+  bodyText(doc, 'The trained XGBoost model generates a monthly risk score (probability of underperformance) for each of the 50 portfolio facilities. Scores are surfaced in two places within the ACE Capital internal portal:')
+  doc.moveDown(0.3)
+
+  const deploy = [
+    ['Analytics Dashboard', 'The Underperformance Rate KPI card shows the current portfolio-wide flag rate. The ML Risk Rankings table displays each facility\'s current risk score, sortable by score, with high-risk facilities flagged for operational review.'],
+    ['Facility Directory', 'Each facility detail panel shows current ML risk score alongside operational metrics, giving the operations team context at the facility level.'],
+  ]
+  deploy.forEach(([name, desc]) => {
+    ensureSpace(doc, 50)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(GOLD2).text(name, 60, y)
+    doc.moveDown(0.2)
+    doc.font('Helvetica').fontSize(9.5).fillColor(MUTED).text(desc, 70, doc.y, { width: 490, lineGap: 2 })
+    doc.moveDown(0.5)
+  })
+
+  bodyText(doc, 'The scoring pipeline is currently run as a batch process against the Supabase database. A facility with a risk score above 0.60 is flagged as high-risk and surfaced prominently in the dashboard. The threshold was set at 0.60 (rather than 0.50) to optimize for precision at the cost of marginal recall — reducing false-positive intervention burden on the operations team.')
+
+  footer(doc, 'ACE Capital · Analytics Methodology · Confidential · Internal Use Only')
+  doc.end()
+
+  return new Promise(resolve => out.on('finish', resolve))
+}
+
+// ─── 6. KPI & Dashboard Definitions ───────────────────────────────────────────
+
+function generateKPIDefinitions() {
+  const doc = makeDoc('ACE Capital — KPI & Dashboard Definitions')
+  const out = fs.createWriteStream(path.join(OUT_DIR, 'kpi-definitions.pdf'))
+  doc.pipe(out)
+
+  header(doc, 'KPI & Dashboard Definitions', 'ACE Capital Analytics Dashboard · Metric Reference Guide')
+
+  bodyText(doc, 'This document defines every metric displayed on the ACE Capital Analytics Dashboard and Facility Directory. For each KPI: the plain-English definition, the calculation formula, the data source, what "good" looks like, and its role in the ML model where applicable.')
+
+  // ── Helper for KPI block ───────────────────────────────────────────────────
+  function kpiBlock(doc, name, { definition, formula, source, benchmark, mlRole }) {
+    ensureSpace(doc, 130)
+    doc.moveDown(0.5)
+    // Name bar
+    const y = doc.y
+    doc.rect(55, y - 2, doc.page.width - 110, 20).fill('#0d1e38')
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(GOLD2).text(name, 60, y + 1)
+    doc.y = y + 24
+
+    const rows = [
+      ['Definition', definition],
+      ['Formula',    formula],
+      ['Source',     source],
+      ['Benchmark',  benchmark],
+    ]
+    if (mlRole) rows.push(['ML Role', mlRole])
+
+    rows.forEach(([label, val]) => {
+      ensureSpace(doc, 20)
+      const ry = doc.y
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MUTED2).text(label, 60, ry, { width: 90 })
+      doc.font('Helvetica').fontSize(9).fillColor(label === 'ML Role' ? GREEN : MUTED)
+        .text(val, 155, ry, { width: 400, lineGap: 1 })
+      const h = doc.heightOfString(val, { width: 400, lineGap: 1 })
+      doc.y = ry + Math.max(14, h) + 3
+    })
+  }
+
+  // ── SECTION: Portfolio-Level KPI Cards ─────────────────────────────────────
+  sectionTitle(doc, 'Portfolio KPI Cards')
+  bodyText(doc, 'The four headline KPI cards at the top of the Analytics Dashboard summarize current portfolio performance across the key dimensions monitored by the investment team.')
+
+  kpiBlock(doc, 'Occupancy Rate', {
+    definition: 'The average proportion of licensed beds filled with patients across all active portfolio facilities, averaged for the most recent reporting period.',
+    formula:    'avg(avg_daily_census / bed_capacity) across all facilities, current month.',
+    source:     'monthly_facility_metrics.occupancy_rate',
+    benchmark:  'Target: ≥ 80%. Industry average for well-run D&A facilities: 75–85%. Below 70% triggers operational review.',
+    mlRole:     'Top feature by SHAP value (0.312). Occupancy is the primary driver of revenue and the strongest leading indicator of EBITDA underperformance. A 3-month trailing average is used in the production model to smooth seasonal noise.',
+  })
+
+  kpiBlock(doc, 'EBITDA Margin', {
+    definition: 'Net operating profitability as a percentage of net revenue, averaged across the portfolio for the current period.',
+    formula:    'avg(ebitda / net_revenue) across all facilities, current month. EBITDA = net_revenue - total_expenses.',
+    source:     'monthly_facility_metrics.ebitda_margin',
+    benchmark:  'Target: ≥ 18%. Strong performers: 22–28%. Below 12% is a concern; below 8% triggers immediate review.',
+    mlRole:     'Second feature by SHAP value (0.271) via the ebitda_margin deviation from prior period (month-over-month delta). Margin deterioration is a more actionable signal than absolute margin level.',
+  })
+
+  kpiBlock(doc, 'Underperformance Rate', {
+    definition: 'The proportion of active facilities currently flagged as underperforming — i.e., EBITDA is below 90% of the monthly budget target.',
+    formula:    'count(underperformance_flag = 1) / count(all active facilities), current month.',
+    source:     'monthly_facility_metrics.underperformance_flag',
+    benchmark:  'Target: < 20%. This is the direct business KPI that the ML model is trained to predict. Historical average: ~28%.',
+    mlRole:     'This IS the ML target variable. The model predicts next month\'s value of this flag for each facility individually, enabling early intervention before the flag is set.',
+  })
+
+  kpiBlock(doc, 'Claims Denial Rate', {
+    definition: 'The average proportion of insurance claims rejected by payers across the portfolio, for the current reporting period.',
+    formula:    'avg(claims_denied / claims_submitted) across all facilities, current month.',
+    source:     'monthly_facility_metrics.claims_denied_rate',
+    benchmark:  'Target: < 8%. Industry average: 8–12%. Above 15% indicates systemic billing or documentation problems.',
+    mlRole:     'Third feature by SHAP value (0.198). Elevated denial rates are a leading indicator of net revenue pressure 30–60 days before the EBITDA impact appears.',
+  })
+
+  // ── SECTION: Operational Metrics ───────────────────────────────────────────
+  sectionTitle(doc, 'Operational Metrics')
+
+  kpiBlock(doc, 'Average Length of Stay (ALOS)', {
+    definition: 'The average number of days a patient spends in treatment per episode of care.',
+    formula:    'avg(avg_length_of_stay) across facilities, current month.',
+    source:     'monthly_facility_metrics.avg_length_of_stay',
+    benchmark:  'Varies by facility type. Residential: 28–45 days. IOP: 10–21 days. Higher ALOS generally improves revenue per admission and clinical outcomes.',
+    mlRole:     'Indirect predictor. Short ALOS can indicate patient dissatisfaction or payer pressure to discharge early; both precede occupancy decline.',
+  })
+
+  kpiBlock(doc, 'Referral Conversion Rate', {
+    definition: 'The proportion of inbound referrals that convert into a patient admission.',
+    formula:    'converted_referrals / total_referrals, per facility per month.',
+    source:     'monthly_facility_metrics.referral_conversion_rate',
+    benchmark:  'Target: ≥ 55%. Below 40% indicates intake process problems or payer authorization delays.',
+    mlRole:     'Forward-looking occupancy signal. A drop in conversion rate in month t predicts lower admissions and occupancy in month t+1.',
+  })
+
+  kpiBlock(doc, 'Staff Turnover Rate', {
+    definition: 'The annualized rate at which employees are leaving the facility.',
+    formula:    'Annualized monthly turnover: (separations in month / average headcount) × 12.',
+    source:     'monthly_facility_metrics.staff_turnover_rate',
+    benchmark:  'Target: < 30% annualized. Industry average: 35–50%. Above 60% is a serious operational concern.',
+    mlRole:     'Fourth feature by SHAP value (0.143). High turnover is causally linked to lower treatment completion rates and reduced patient capacity, both of which suppress revenue.',
+  })
+
+  kpiBlock(doc, 'Collections Rate', {
+    definition: 'The proportion of gross billed charges actually collected as net revenue.',
+    formula:    'net_revenue / gross_revenue, per facility per month.',
+    source:     'monthly_facility_metrics.collections_rate',
+    benchmark:  'Target: ≥ 65%. Below 55% indicates significant write-off pressure, often from payer contract issues or billing quality problems.',
+    mlRole:     'Indirect. Collections rate decline precedes net revenue compression, which precedes EBITDA underperformance.',
+  })
+
+  kpiBlock(doc, 'AR Days (Days in Accounts Receivable)', {
+    definition: 'The average number of days between service delivery and payment collection.',
+    formula:    'ar_days stored directly. Conceptually: (accounts receivable balance / net_revenue) × 30.',
+    source:     'monthly_facility_metrics.ar_days',
+    benchmark:  'Target: < 45 days. Above 60 days indicates collections or denial management problems. Above 75 days is a cash flow risk.',
+    mlRole:     'Rising AR days is an early warning of revenue cycle deterioration, typically appearing 4–6 weeks before the EBITDA impact.',
+  })
+
+  footer(doc, 'ACE Capital · KPI & Dashboard Definitions · Confidential · Internal Use Only')
+  doc.end()
+
+  return new Promise(resolve => out.on('finish', resolve))
+}
+
+// ─── 7. Portfolio Financial Summary ───────────────────────────────────────────
+
+function generatePortfolioFinancial() {
+  const doc = makeDoc('ACE Capital — Portfolio Financial Summary')
+  const out = fs.createWriteStream(path.join(OUT_DIR, 'portfolio-financial-summary.pdf'))
+  doc.pipe(out)
+
+  header(doc, 'Portfolio Financial Summary', 'ACE Capital Behavioral Health Portfolio · Deal & Performance Overview')
+
+  bodyText(doc, 'This document provides a financial overview of the ACE Capital behavioral health portfolio as of the current reporting period. All figures are illustrative, based on the simulated dataset underlying the Portfolio Intelligence Initiative.')
+
+  // ── Portfolio Snapshot ─────────────────────────────────────────────────────
+  sectionTitle(doc, 'Portfolio Snapshot')
+
+  const snapshot = [
+    ['Total Facilities',          '50 rehabilitation centers'],
+    ['Active Holdings',           '43 facilities'],
+    ['Exited Holdings',           '7 facilities'],
+    ['Total AUM',                 '~$2.1 Billion'],
+    ['Geographic Focus',          'Southeastern United States (AL, FL, GA, KY, MS, NC, SC, TN, VA, WV)'],
+    ['Primary Treatment Focus',   'Drug & Alcohol Rehabilitation (Residential, IOP, PHP, Detox, Dual Diagnosis)'],
+    ['Avg. Bed Capacity',         '62 beds per facility (range: 18–210)'],
+    ['Total Licensed Beds',       '~3,100 across active portfolio'],
+    ['Portfolio Occupancy',       '~79% average (trailing 12 months)'],
+    ['Portfolio EBITDA Margin',   '~19.4% average (trailing 12 months)'],
+  ]
+  const sCols = [60, 270]
+  snapshot.forEach(([k, v]) => {
+    ensureSpace(doc, 18)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD2).text(k, sCols[0], y, { width: 200 })
+    doc.font('Helvetica').fontSize(9).fillColor(WHITE).text(v, sCols[1], y, { width: 290 })
+    doc.moveDown(0.55)
+  })
+
+  // ── Deal Structure ─────────────────────────────────────────────────────────
+  sectionTitle(doc, 'Deal Structure & Entry Metrics')
+  bodyText(doc, 'ACE Capital employs a platform-and-add-on acquisition strategy. Platform deals establish a geographic presence in a new market; add-ons expand the platform to capture economies of scale.')
+  doc.moveDown(0.4)
+
+  const dealTypes = [
+    ['Platform Deals',  '12 deals', 'First entry in a new market. Higher entry multiples (avg. 7.8x EBITDA) justified by first-mover positioning and platform optionality.'],
+    ['Add-On Deals',    '35 deals', 'Bolt-on acquisitions. Lower entry multiples (avg. 5.9x EBITDA) reflecting reduced standalone risk and known integration path.'],
+    ['Recapitalizations','3 deals', 'Minority partner buyouts or balance sheet restructurings. Avg. entry multiple: 6.4x.'],
+  ]
+  const dtCols = [60, 155, 230]
+  dealTypes.forEach(([type, count, desc]) => {
+    ensureSpace(doc, 40)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(WHITE).text(type, dtCols[0], y, { width: 90 })
+    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(GOLD).text(count, dtCols[1], y, { width: 70 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(desc, dtCols[2], y, { width: 330, lineGap: 1 })
+    doc.moveDown(0.7)
+  })
+
+  // ── Entry Multiple Distribution ────────────────────────────────────────────
+  sectionTitle(doc, 'Entry Multiple Distribution (EV / EBITDA)')
+  bodyText(doc, 'Acquisition prices ranged from 3.8x to 10.2x EBITDA, reflecting deal-specific distress levels, market dynamics, and competitive processes.')
+  doc.moveDown(0.6)
+
+  const multiples = [
+    { range: '< 5.0x',      count: 9,  pct: 0.18, note: 'Deep distress; operational turnaround required' },
+    { range: '5.0x – 6.5x', count: 21, pct: 0.42, note: 'Core target range; operationally challenged but viable' },
+    { range: '6.5x – 8.0x', count: 14, pct: 0.28, note: 'Above-average quality; strategic market position' },
+    { range: '> 8.0x',      count: 6,  pct: 0.12, note: 'Premium assets; platform anchors in key markets' },
+  ]
+  const barMaxW = 220
+  multiples.forEach(row => {
+    ensureSpace(doc, 30)
+    const y = doc.y
+    const bw = Math.round(row.pct * barMaxW)
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(WHITE).text(row.range, 60, y, { width: 90 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(`${row.count} deals`, 155, y, { width: 60 })
+    doc.rect(220, y + 2, barMaxW, 11).fill('#0d1e38')
+    doc.rect(220, y + 2, bw, 11).fill(GOLD)
+    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(`${Math.round(row.pct * 100)}%  ${row.note}`, 220 + barMaxW + 8, y, { width: 185 })
+    doc.moveDown(0.9)
+  })
+
+  // ── Page 2 ──────────────────────────────────────────────────────────────────
+  doc.addPage()
+
+  // ── Return Performance ─────────────────────────────────────────────────────
+  sectionTitle(doc, 'Return Performance (Exited Holdings)')
+  bodyText(doc, '7 facilities have been fully exited. Realized returns are as follows:')
+  doc.moveDown(0.5)
+
+  const exits = [
+    { moic: '3.4x', irr: '31%',  entry: '5.2x', exit: '7.8x',  type: 'Add-On',   status: 'Exited' },
+    { moic: '2.9x', irr: '27%',  entry: '4.8x', exit: '7.1x',  type: 'Platform', status: 'Exited' },
+    { moic: '2.7x', irr: '24%',  entry: '6.1x', exit: '8.4x',  type: 'Add-On',   status: 'Exited' },
+    { moic: '2.5x', irr: '22%',  entry: '5.9x', exit: '7.6x',  type: 'Add-On',   status: 'Exited' },
+    { moic: '2.1x', irr: '18%',  entry: '7.2x', exit: '8.9x',  type: 'Platform', status: 'Exited' },
+    { moic: '1.8x', irr: '14%',  entry: '6.4x', exit: '7.2x',  type: 'Recap',    status: 'Exited' },
+    { moic: '1.4x', irr: '9%',   entry: '8.1x', exit: '7.9x',  type: 'Platform', status: 'Exited' },
+  ]
+
+  const eCols  = [60, 130, 195, 265, 335, 410]
+  const eHdrs  = ['MOIC', 'IRR', 'Entry Mult.', 'Exit Mult.', 'Deal Type', 'Status']
+  let ey = doc.y
+  doc.rect(55, ey - 3, doc.page.width - 110, 18).fill('#0d1e38')
+  eHdrs.forEach((h, i) => {
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(GOLD2).text(h, eCols[i], ey, { width: 65, align: i === 0 ? 'left' : 'center' })
+  })
+  ey += 18
+
+  exits.forEach((row, idx) => {
+    doc.rect(55, ey - 2, doc.page.width - 110, 18).fill(idx % 2 === 0 ? '#0f1e35' : '#0b1830')
+    const moicNum = parseFloat(row.moic)
+    const moicColor = moicNum >= 2.5 ? GREEN : (moicNum >= 2.0 ? GOLD2 : MUTED)
+    const vals = [row.moic, row.irr, row.entry, row.exit, row.type, row.status]
+    vals.forEach((v, i) => {
+      const color = i === 0 ? moicColor : (i === 1 ? moicColor : WHITE)
+      doc.font(i <= 1 ? 'Helvetica-Bold' : 'Helvetica').fontSize(9).fillColor(color)
+        .text(v, eCols[i], ey, { width: 65, align: i === 0 ? 'left' : 'center' })
+    })
+    ey += 18
+  })
+  doc.y = ey + 8
+
+  bodyText(doc, 'Average realized MOIC: 2.4x. 4 of 7 exits (57%) cleared the 2.5x high_return_flag threshold. Portfolio gross IRR on exited holdings: approximately 20.7%.')
+
+  // ── Active Portfolio MOIC Projections ────────────────────────────────────
+  sectionTitle(doc, 'Active Portfolio — Projected Returns')
+  bodyText(doc, 'Projected MOIC for the 43 active holdings, based on current EBITDA trajectory and assumed exit multiples at end of hold period.')
+  doc.moveDown(0.4)
+
+  const projections = [
+    { range: '≥ 3.0x projected',   count: 8,  pct: 0.186 },
+    { range: '2.5x – 3.0x',        count: 14, pct: 0.326 },
+    { range: '2.0x – 2.5x',        count: 13, pct: 0.302 },
+    { range: '1.5x – 2.0x',        count: 6,  pct: 0.140 },
+    { range: '< 1.5x (at risk)',    count: 2,  pct: 0.047 },
+  ]
+
+  projections.forEach(row => {
+    ensureSpace(doc, 28)
+    const y = doc.y
+    const bw = Math.round(row.pct * barMaxW)
+    const color = row.range.includes('at risk') ? RED : (row.range.includes('≥ 3.0') ? GREEN : GOLD2)
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(color).text(row.range, 60, y, { width: 120 })
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text(`${row.count} deals`, 185, y, { width: 55 })
+    doc.rect(245, y + 2, barMaxW, 11).fill('#0d1e38')
+    doc.rect(245, y + 2, bw, 11).fill(color)
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(color).text(`${Math.round(row.pct * 100)}%`, 245 + barMaxW + 8, y)
+    doc.moveDown(0.9)
+  })
+
+  bodyText(doc, 'Projected blended MOIC on active portfolio: ~2.6x. The 2 at-risk holdings are the primary focus of the Portfolio Intelligence Initiative\'s early warning system and current operational intervention workstreams.')
+
+  // ── Value Creation by Category ─────────────────────────────────────────────
+  sectionTitle(doc, 'Value Creation Initiatives — Impact Summary')
+  bodyText(doc, 'Value creation initiatives track strategic improvement projects at each facility. As of the current period, across all 50 facilities:')
+  doc.moveDown(0.4)
+
+  const vci = [
+    ['Total Initiatives Tracked',       '~275 (avg. 5.5 per facility)'],
+    ['Completed',                        '~140 (51%)'],
+    ['In Progress',                      '~85 (31%)'],
+    ['Planning / On Hold',               '~50 (18%)'],
+    ['Total Estimated Value Impact',     '~$340M (projected EBITDA & revenue improvement)'],
+    ['Total Realized Value Impact',      '~$155M (from completed initiatives)'],
+    ['Avg. Value per Completed Initiative', '~$1.1M'],
+  ]
+  vci.forEach(([k, v]) => {
+    ensureSpace(doc, 18)
+    const y = doc.y
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD2).text(k, 60, y, { width: 250 })
+    doc.font('Helvetica').fontSize(9).fillColor(WHITE).text(v, 315, y, { width: 250 })
+    doc.moveDown(0.55)
+  })
+
+  footer(doc, 'ACE Capital · Portfolio Financial Summary · Confidential · Internal Use Only')
+  doc.end()
+
+  return new Promise(resolve => out.on('finish', resolve))
+}
+
 // ─── Run ───────────────────────────────────────────────────────────────────────
 
 ;(async () => {
@@ -705,5 +1192,11 @@ function generateDataDictionary() {
   console.log('  ✓ ml-model-performance.pdf')
   await generateDataDictionary()
   console.log('  ✓ data-dictionary.pdf')
+  await generateMethodology()
+  console.log('  ✓ methodology.pdf')
+  await generateKPIDefinitions()
+  console.log('  ✓ kpi-definitions.pdf')
+  await generatePortfolioFinancial()
+  console.log('  ✓ portfolio-financial-summary.pdf')
   console.log('Done.')
 })()

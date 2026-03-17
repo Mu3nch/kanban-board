@@ -39,6 +39,30 @@ const DOCUMENTS = [
     filename: 'data-dictionary.pdf',
     size: '0.2 MB',
   },
+  {
+    id: 5,
+    title: 'Analytics Methodology',
+    description: 'End-to-end ML pipeline documentation — problem framing, feature engineering, class imbalance handling, train/test split, hyperparameter tuning, and deployment architecture.',
+    category: 'Machine Learning',
+    filename: 'methodology.pdf',
+    size: '0.2 MB',
+  },
+  {
+    id: 6,
+    title: 'KPI & Dashboard Definitions',
+    description: 'Authoritative definitions for all metrics shown in the Analytics Dashboard — formulas, data sources, benchmarks, and ML feature roles for each KPI.',
+    category: 'Operations',
+    filename: 'kpi-definitions.pdf',
+    size: '0.2 MB',
+  },
+  {
+    id: 7,
+    title: 'Portfolio Financial Summary',
+    description: 'Portfolio-level financial snapshot: AUM, deal structure breakdown, entry multiples, exit returns, active portfolio projected MOICs, and value creation initiative impact.',
+    category: 'Financial',
+    filename: 'portfolio-financial-summary.pdf',
+    size: '0.2 MB',
+  },
 ]
 
 const CATEGORY_COLORS = {
