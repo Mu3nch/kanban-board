@@ -29,8 +29,24 @@ const RED    = '#f87171'
 
 function makeDoc(title) {
   const doc = new PDFDocument({ size: 'LETTER', margins: { top: 60, bottom: 60, left: 60, right: 60 }, info: { Title: title } })
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
+
+  // Apply navy background + gold bar to EVERY page, including overflow pages
+  function applyPageBg() {
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
+    doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
+  }
+  doc.on('pageAdded', applyPageBg)
+  applyPageBg()
+
   return doc
+}
+
+// Ensure there's at least `needed` pts of vertical space before continuing;
+// if not, add a new page (background handled by pageAdded listener).
+function ensureSpace(doc, needed = 140) {
+  if (doc.y + needed > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage()
+  }
 }
 
 function header(doc, title, subtitle) {
@@ -54,7 +70,8 @@ function header(doc, title, subtitle) {
   doc.moveDown(1)
 }
 
-function sectionTitle(doc, text) {
+function sectionTitle(doc, text, spaceNeeded = 140) {
+  ensureSpace(doc, spaceNeeded)
   doc.moveDown(0.6)
   doc.font('Helvetica-Bold').fontSize(13).fillColor(GOLD2).text(text.toUpperCase(), { characterSpacing: 0.5 })
   doc.moveDown(0.3)
@@ -133,11 +150,8 @@ function generateCompanyBio() {
     doc.moveDown(0.65)
   })
 
-  // ── Page 2: Leadership + Portfolio Intelligence ───────────────────────────────
+  // ── Page 2: Leadership ────────────────────────────────────────────────────────
   doc.addPage()
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
-  doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
-  doc.moveDown(0.5)
 
   sectionTitle(doc, 'Leadership')
 
@@ -170,6 +184,7 @@ function generateCompanyBio() {
   ]
 
   team.forEach(person => {
+    ensureSpace(doc, 110)
     doc.moveDown(0.5)
     doc.font('Helvetica-Bold').fontSize(11).fillColor(WHITE).text(person.name)
     doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD).text(person.title)
@@ -180,9 +195,6 @@ function generateCompanyBio() {
 
   // ── Page 3: Portfolio Intelligence Initiative ─────────────────────────────────
   doc.addPage()
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
-  doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
-  doc.moveDown(0.5)
 
   sectionTitle(doc, 'The Portfolio Intelligence Initiative')
   bodyText(doc, 'Designed and implemented by Partner Micheal Muench. This is ACE Capital\'s competitive edge in the next phase of portfolio management.')
@@ -318,9 +330,6 @@ function generateMLComparison() {
 
   // Feature importance
   doc.addPage()
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
-  doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
-  doc.moveDown(0.5)
 
   sectionTitle(doc, 'XGBoost: Top Feature Importances')
   bodyText(doc, 'Feature importance measured by mean SHAP value magnitude across the test fold. Higher = greater influence on model output.')
