@@ -80,89 +80,92 @@ function generateCompanyBio() {
   header(doc, 'ACE Capital', 'Behavioral Health Portfolio · Company Overview & History')
 
   // Origin story
-  sectionTitle(doc, 'Our Storied Origin')
-  bodyText(doc, 'ACE Capital was founded in 1993 by identical twins Bryce and Bryce Westmore-Huntington III, who, after graduating from business school, decided to invest in "behavioral health" after misreading a textbook on behavioral economics. By the time anyone corrected them, they had already closed their first deal and declared it "close enough."')
+  sectionTitle(doc, 'The Origin Story')
+  bodyText(doc, 'Mark Hanna spent 14 years on Wall Street — enough time to accumulate a Hamptons timeshare, three Bloomberg terminals, and a front-row seat to the drug and alcohol crisis quietly hollowing out the finance industry from the inside. He watched colleagues disappear to "extended sabbaticals." He sat through HR presentations about "wellness resources" that no one used. He watched brilliant people — people who could price a derivative in their sleep — completely fall apart.')
   doc.moveDown(0.5)
-  bodyText(doc, 'The firm name \u2014 ACE \u2014 stands for Acquisitions, Capital, and Excellence, though internally it has also stood for \u201CA Confusing Enterprise,\u201D \u201CAggressive Cost Extraction,\u201D and once, briefly, \u201CAlan\u2019s Coffee Expense\u201D during a particularly rough quarterly review.')
+  bodyText(doc, 'In 2008, after watching his third colleague in a single quarter vanish to what was described as "a long vacation in an undisclosed location," Hanna had what he later called "an epiphany, or possibly a panic attack — the Bloomberg terminal makes them hard to distinguish." He left Wall Street, founded ACE Capital, and pointed his deal-making machinery at the one industry he knew needed both more money and more business sense: behavioral health.')
+  doc.moveDown(0.5)
+  bodyText(doc, 'His thesis was simple: the D&A rehabilitation industry was full of distressed facilities doing genuinely important work with genuinely terrible unit economics. Most were running on goodwill, chaos, and Medicare reimbursements. Hanna could fix the economics. The goodwill, he figured, would take care of itself.')
 
   // Investment thesis
   sectionTitle(doc, 'Investment Thesis')
-  bodyText(doc, '"Feelings are assets. Specifically, other people\'s feelings."')
+  bodyText(doc, '"We buy distressed rehab centers. For the returns. And also feelings."')
   doc.moveDown(0.4)
-  bodyText(doc, 'More formally: ACE Capital targets operationally underperforming behavioral health facilities in the southeastern United States where our proprietary ML-driven value creation framework — lovingly nicknamed FEELINGS™ (Facility Efficiency Enhancement via Leveraged Intelligence, Normalized Growth & Synergies) — can unlock EBITDA improvement within a 3–5 year hold period.')
+  bodyText(doc, 'ACE Capital targets operationally underperforming drug and alcohol rehabilitation facilities across the southeastern United States. Most targets share a familiar profile: solid mission, dedicated staff, and a back-office that appears to be running on Post-it notes and optimism. ACE acquires these facilities, applies Wall Street-grade business discipline, and scales what works across the portfolio.')
   doc.moveDown(0.4)
-  bodyText(doc, 'We believe deeply in data-driven decision making, except on Fridays, which are vibes-only.')
+  bodyText(doc, 'The edge is not a secret: most rehab operators are clinicians first and businesspeople never. ACE brings economies of scale, centralized back-office functions, group purchasing power, and the kind of financial rigor that comes from spending 14 years structuring instruments that no one fully understood. Hold period is 3-5 years. Exit is via strategic sale, or, as Hanna puts it, "when the MOIC looks good enough to mention at the alumni dinner."')
 
   // Portfolio stats
   sectionTitle(doc, 'Portfolio at a Glance')
 
   const stats = [
-    ['Portfolio Facilities',   '50'],
+    ['Founder',                'Mark Hanna'],
+    ['Founded',                '2008 (worst year to start anything; turned out fine)'],
+    ['Portfolio Facilities',   '50 rehabilitation centers'],
     ['Region',                 'Southeastern United States'],
-    ['Focus',                  'D&A Treatment & Mental Health'],
-    ['Assets Under Management','~$2.1 Billion (give or take a rounding error)'],
-    ['Founded',                '1993 (or 1994, depending on which twin you ask)'],
-    ['Headquarters',           'Nashville, TN (the good part)'],
+    ['Focus',                  'Drug & Alcohol Treatment'],
+    ['Assets Under Management','~$2.1 Billion'],
+    ['Headquarters',           'Nashville, TN'],
   ]
-  const colX = [60, 260]
+  const colX = [60, 270]
   stats.forEach(([label, val]) => {
     const y = doc.y
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD).text(label, colX[0], y, { width: 180 })
-    doc.font('Helvetica').fontSize(9).fillColor(WHITE).text(val, colX[1], y, { width: 290 })
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD).text(label, colX[0], y, { width: 200 })
+    doc.font('Helvetica').fontSize(9).fillColor(WHITE).text(val, colX[1], y, { width: 280 })
     doc.moveDown(0.55)
   })
 
-  // Core values
-  sectionTitle(doc, 'Core Values')
+  // Value creation strategy
+  sectionTitle(doc, 'Value Creation Strategy')
+  bodyText(doc, 'ACE Capital operates across four pillars — the first three are classic PE playbook; the fourth is where it gets interesting:')
+  doc.moveDown(0.4)
 
-  const values = [
-    ['Synergy',         'We put this word in every deck. It means something different every time.'],
-    ['Transparency',    'We are fully transparent about the things we choose to be transparent about.'],
-    ['Empathy Pipeline','We have identified empathy as a bottleneck and are actively working to scale it.'],
-    ['Operational Excellence', 'Our facilities consistently excel at operations, per the metrics we select.'],
-    ['Return Maximization', 'MOIC ≥ 2.5x or we act slightly disappointed at the annual LP dinner.'],
+  const pillars = [
+    ['1. Acquire Distressed',   'Target facilities where the business model is "strong mission, zero financial infrastructure." Buy at a discount that reflects the mess, not the potential.'],
+    ['2. Stabilize Operations', 'Install basic business hygiene: real budgeting, occupancy management, billing optimization, staffing ratios that make sense. Revolutionary stuff, by industry standards.'],
+    ['3. Scale Efficiencies',   'Centralize back-office functions, negotiate group purchasing across 50 facilities, implement standardized playbooks. Force multiply the things that work.'],
+    ['4. Predict & Prevent',    'Use data to catch underperformers before they become crises. This pillar is the newest, the most sophisticated, and the reason Micheal Muench was hired.'],
   ]
-  values.forEach(([name, desc]) => {
+  pillars.forEach(([step, desc]) => {
     const y = doc.y
-    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(WHITE).text(`• ${name}`, 60, y, { continued: true })
-    doc.font('Helvetica').fillColor(MUTED).text(`  — ${desc}`, { lineGap: 2 })
-    doc.moveDown(0.3)
+    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(GOLD2).text(step, 60, y, { width: 140 })
+    doc.font('Helvetica').fontSize(9.5).fillColor(MUTED).text(desc, 205, y, { width: 345, lineGap: 2 })
+    doc.moveDown(0.65)
   })
 
-  // Leadership team
+  // ── Page 2: Leadership + Portfolio Intelligence ───────────────────────────────
   doc.addPage()
   doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
   doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
   doc.moveDown(0.5)
 
-  sectionTitle(doc, 'Leadership Team')
-  bodyText(doc, 'ACE Capital is led by a world-class team of professionals who have collectively attended more than 200 cocktail receptions and have opinions about airport lounges.')
+  sectionTitle(doc, 'Leadership')
 
   const team = [
     {
-      name: 'Chad Acquisition',
-      title: 'Chief Executive Officer',
-      bio: 'Chad has over 25 years of experience acquiring things. Originally a philosophy major, Chad pivoted to finance after realizing Nietzsche had poor IRR. He enjoys golf, saying "circle back," and referring to all problems as "opportunities." His MBA thesis was titled: "Leverage: A Love Story."',
+      name:  'Mark Hanna',
+      title: 'Founder & Managing Partner',
+      bio:   'After 14 years structuring CDOs and watching the human cost of what Wall Street does to people, Hanna decided to redirect his capabilities toward something with better karma and, if he was being honest, still pretty good returns. He has since built ACE Capital into a 50-facility, $2.1B AUM platform. He still owns one of the Bloomberg terminals. He says it is sentimental. His investment committee decks always end with a slide that reads: "And also, we are helping people." No one has ever questioned this slide.',
     },
     {
-      name: 'Biff Returns',
+      name:  'Micheal Muench',
+      title: 'Partner, Business Analytics & Portfolio Intelligence',
+      bio:   'Muench joined ACE as a recently hired Partner, bringing a background in business analytics and, crucially, additional capital. While most new partners arrive with opinions, Muench arrived with opinions and a plan. Within his first year, he designed and built ACE Capital\'s Portfolio Intelligence Initiative — a full-stack data and machine learning platform that consolidates disparate operational data across all 50 facilities, applies predictive analytics, and surfaces at-risk facilities before underperformance becomes a crisis. The initiative spans XGBoost classification models, an interactive analytics dashboard, a facility directory, and the internal portal currently hosting this document. His working philosophy: "If you cannot model it, you do not understand it. If you can model it, you still might not understand it, but at least you have a chart."',
+    },
+    {
+      name:  'Portia Folio',
+      title: 'Chief Operating Officer',
+      bio:   'Folio oversees operational execution across the portfolio, which she describes as "herding extremely well-meaning cats, 50 at a time." She has implemented 17 value creation initiatives across the portfolio, 14 of which have been declared successes, and 3 of which are pending a mutually agreed-upon definition of success.',
+    },
+    {
+      name:  'Biff Returns',
       title: 'Chief Financial Officer',
-      bio: 'Biff joined ACE after a decade at a bulge-bracket bank where he earned the nickname "The Denominator" for his creative approach to per-unit economics. He has never met a margin he couldn\'t compress. Favorite phrase: "Let\'s put a number on it." He has a spreadsheet for his feelings. It is color-coded.',
+      bio:   'Returns joined ACE after a decade at a bulge-bracket bank where he earned the nickname "The Denominator" for his creative approach to per-unit economics. He has never met a margin he could not compress. He has a spreadsheet for his feelings. It is color-coded. The conditional formatting alone took three days.',
     },
     {
-      name: 'Data McDataface',
-      title: 'Chief Technology Officer',
-      bio: 'Data (legal name: Gerald) joined ACE after winning a Kaggle competition and accidentally emailing the results to the wrong Chad. He built the FEELINGS™ ML framework in six weeks and has been asked to "just explain it simply" at every board meeting since. He communicates primarily in feature importances.',
-    },
-    {
-      name: 'Portia Folio',
-      title: 'Head of Portfolio Operations',
-      bio: 'Portia oversees operational improvements across all 50 facilities, which she describes as "herding extremely well-meaning cats." She has implemented 14 value creation initiatives, 11 of which have been declared successes pending definition of success.',
-    },
-    {
-      name: 'Compliance Colin',
-      title: 'General Counsel & Chief Compliance Officer',
-      bio: 'Colin joined ACE after a previous employer asked him to "be a little less thorough." He has since found his people. Colin\'s motto: "If in doubt, add another clause." He is currently on page 847 of drafting the Employee Handbook and considers it a first draft.',
+      name:  'Compliance Colin',
+      title: 'General Counsel',
+      bio:   'Colin joined ACE after a previous employer suggested he might be "a little too thorough." He has since found his people. He is currently on page 912 of the Employee Handbook and considers it a solid first draft.',
     },
   ]
 
@@ -172,26 +175,46 @@ function generateCompanyBio() {
     doc.font('Helvetica-Bold').fontSize(9).fillColor(GOLD).text(person.title)
     doc.moveDown(0.2)
     doc.font('Helvetica').fontSize(9.5).fillColor(MUTED).text(person.bio, { lineGap: 2 })
-    doc.moveDown(0.3)
+    doc.moveDown(0.2)
   })
 
-  // Strategy section
-  sectionTitle(doc, 'Value Creation Strategy')
-  bodyText(doc, 'ACE Capital\'s proprietary value creation framework operates across four pillars:')
-  doc.moveDown(0.3)
+  // ── Page 3: Portfolio Intelligence Initiative ─────────────────────────────────
+  doc.addPage()
+  doc.rect(0, 0, doc.page.width, doc.page.height).fill(NAVY)
+  doc.rect(0, 0, doc.page.width, 6).fill(GOLD)
+  doc.moveDown(0.5)
 
-  const pillars = [
-    ['1. Identify', 'Use ML models to flag facilities with EBITDA underperformance before it becomes a crisis (or a press release).'],
-    ['2. Intervene', 'Deploy the Operations Strike Team™ (it\'s just Portia and two analysts) to implement improvement plans.'],
-    ['3. Optimize', 'Compress costs along vectors that will not appear in the next JCAHO audit.'],
-    ['4. Exit', 'Sell at an attractive multiple to a strategic buyer who will repeat this process.'],
+  sectionTitle(doc, 'The Portfolio Intelligence Initiative')
+  bodyText(doc, 'Designed and implemented by Partner Micheal Muench. This is ACE Capital\'s competitive edge in the next phase of portfolio management.')
+  doc.moveDown(0.6)
+
+  sectionTitle(doc, 'The Problem')
+  bodyText(doc, 'Fifty facilities. Forty-eight months of operational history. Data spread across billing systems, EHR platforms, spreadsheets of varying quality, and at least one facility that was still tracking occupancy in a physical binder as recently as 2022.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'ACE had the data. What it lacked was a unified view — any ability to identify which facilities were trending toward underperformance before they got there, and any systematic way to prioritize operational interventions across the portfolio. The result was a reactive posture: problems were identified when they showed up in the monthly financials, by which point the damage was already done.')
+
+  sectionTitle(doc, 'The Solution')
+  bodyText(doc, 'Muench designed and built a full-stack portfolio intelligence platform from the ground up. The initiative has three layers:')
+  doc.moveDown(0.4)
+
+  const layers = [
+    ['Data Infrastructure', 'A unified PostgreSQL data model consolidating operational metrics, financial performance, facility profiles, and M&A deal data across all 50 facilities. 2,400+ facility-month observations. Integrated with Supabase for real-time access.'],
+    ['Predictive ML Engine', 'An XGBoost classification model trained to predict facility-level EBITDA underperformance (defined as EBITDA < 90% of budget) one month in advance. AUC-ROC of 0.912. Evaluated against five competing algorithms; XGBoost selected for superior discrimination and class-imbalance handling. Full model selection rationale documented separately.'],
+    ['Analytics Dashboard & Portal', 'An interactive internal portal — built in React — featuring a real-time analytics dashboard with KPI tracking, an ML risk ranking table, a facility directory with geographic mapping, a reports builder, and this document library. All accessible from a single internal command center.'],
   ]
-  pillars.forEach(([step, desc]) => {
+  layers.forEach(([name, desc]) => {
     const y = doc.y
-    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(GOLD2).text(step, 60, y, { width: 75 })
-    doc.font('Helvetica').fontSize(9.5).fillColor(MUTED).text(desc, 140, y, { width: 410, lineGap: 2 })
-    doc.moveDown(0.55)
+    doc.font('Helvetica-Bold').fontSize(9.5).fillColor(GREEN).text(name, 60, y, { width: 150 })
+    doc.font('Helvetica').fontSize(9.5).fillColor(MUTED).text(desc, 215, y, { width: 335, lineGap: 2 })
+    doc.moveDown(0.7)
   })
+
+  sectionTitle(doc, 'The Outcome')
+  bodyText(doc, 'ACE Capital can now identify facilities at risk of underperformance before they miss their EBITDA targets — giving the operations team a lead time that did not previously exist. Risk scores are generated monthly for all 50 facilities. High-risk flags trigger early operational review. The model\'s recall of 79.8% means that roughly 4 in 5 underperformance events are caught in advance.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'This is the difference between finding out a facility is in trouble when the monthly P&L lands, and finding out six weeks earlier when something can still be done about it.')
+  doc.moveDown(0.4)
+  bodyText(doc, 'It is, as Hanna put it at the last LP meeting, "the first time anyone has used machine learning to make me feel better about this business." He then added the slide to his investment committee deck. It was not questioned.')
 
   footer(doc, 'ACE Capital · Confidential & Proprietary · Internal Use Only · Past vibes are not indicative of future returns.')
   doc.end()
